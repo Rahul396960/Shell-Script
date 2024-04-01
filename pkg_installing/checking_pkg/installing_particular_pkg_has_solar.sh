@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#extracting ips
+#list of ip's are in 2.txt file extracting ips
 #checking which server have solarflare cards
-#installing package file on those server
-#and then printing on which system package installation was successful and unsuccessful.
+#Then installing sfutil package file on those server
+#and then printing which server is unreachable and on which system package installation was successful and unsuccessful.
 
 reachable_ips=()
 unreachable_ips=()
@@ -35,12 +35,12 @@ for i in "${reachable_ips[@]}"; do
 	     # echo "$ssh_output"
              echo "$ssh_output" | grep -qiE 'solarflare|solar'
               if [ $? -eq 0 ]; then
-                # echo "Contains 'Solarflare' or 'solar':"
+                echo "Contains 'Solarflare' or 'solar':"
                  #echo "$ssh_output"
 		  cont_sol+=("$i")
 		  echo "$i" >> solar.txt
 	      else
-		 #echo "doesn't contains 'Solarflare' or 'solar':"
+		 echo "doesn't contains 'Solarflare' or 'solar':"
 		 #echo "$ssh_output"
 		  non_sol+=("$i")
 	      fi
@@ -58,38 +58,33 @@ done
 #echo "======================="
 
 # Print unreachable IPs
-#echo "Unreachable IPs:"
-#printf '%s\n' "${unreachable_ips[@]}"
-#echo "------------------"
-
-
-# to check solarflare
-#echo " IPs:"
-#printf '%s\n' "${cont_sol[@]}"
-
-#echo "======================="
-
-#echo "IPs:"
-#printf '%s\n' "${non_sol[@]}"
+echo "-------------Unreachable IPs:-------------"
+printf '%s\n' "${unreachable_ips[@]}"
+echo "------------------"
 
 file=sfutils-7.3.4.1001-1.x86_64.rpm
 install_issues=()
 already_installed=()
 not_installed=()
+installed=()
 
 for k in "${cont_sol[@]}"; do
 
 #	scp -r $file root@"$k":~
-	ssh root@"$k" "rpm -ivh $file"
+	inst=$(ssh root@"$k" "rpm -ivh $file")
         if [ $? -eq 0 ]; then
-                    #echo "RPM file installed successfully on $k"
-                    echo "already installed $k"
-		    already_installed+=("$k")
-                else
-                   # echo "Error copying RPM file to $str"
-                    #install_issues+=("$k")
-		     not_installed+=("$k")
-                fi
+	    if [ $(echo $inst | grep -i "already installed") ]; then
+                #echo "RPM file installed successfully on $k"
+                echo "already installed on $k"
+		already_installed+=("$k")
+	    else
+		echo "succesfully installed on $k"
+		installed+=("$k")
+	    fi
+        else
+		echo "unable to install"
+		not_installed+=("$k")
+        fi
 	echo "------------------"
 done      
 
@@ -99,6 +94,11 @@ printf '%s\n' "${already_installed[@]}"
 echo "------------------"
 
 echo "======================="
-echo "not Installed:"
+echo "unable to Install:"
 printf '%s\n' "${not_installed[@]}"
+echo "------------------"
+
+echo "======================="
+echo "Succesfully Installed:"
+printf '%s\n' "${installed[@]}"
 echo "------------------"

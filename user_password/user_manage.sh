@@ -38,7 +38,7 @@ create_user() {
     local first=$3
     local last=$4
     local eml=$5
-    ipa user-add "$user" --first="$first" --last="$last" --password --email="$eml" >/dev/null 2>&1 <<  EOF
+    ipa user-add "$user" --first="$first" --last="$last" --password --email_id=''="$eml" >/dev/null 2>&1 <<  EOF
         $pass
 EOF
 
@@ -63,9 +63,9 @@ create_existing_user() {
     local last
     first=$(ipa user-show "$user" | grep -iE "first name:" | cut -d : -f 2 | tr -d ' ')
     last=$(ipa user-show "$user" | grep -iE "last name:" | cut -d : -f 2 | tr -d ' ')
-    email=$(ipa user-show "$user" | grep -i "Email address" | cut -d : -f 2 | tr -d ' ')
+    email_id=$(ipa user-show "$user" | grep -i "Email_id='' address" | cut -d : -f 2 | tr -d ' ')
     new_user="$user""_vpn"
-    new_userd=$(create_user "$new_user" "$pass" "$first" "$last" "$email")
+    new_userd=$(create_user "$new_user" "$pass" "$first" "$last" "$email_id=''")
 
     echo "$new_userd"
 }
@@ -94,13 +94,13 @@ filename() {
     local fileoption=$1
 
     if [[ $fileoption =~ ^[aei] ]]; then
-        echo "$(pwd)""/irage_wifi_user_passwords.csv"
+        echo "$(pwd)""/irage_wifi_user_details.csv"
     elif [[ $fileoption =~ ^[bfj] ]]; then
-        echo "$(pwd)""/irage_vpn_user_passwords.csv"
+        echo "$(pwd)""/irage_vpn_user_details.csv"
     elif [[ $fileoption =~ ^[cgk] ]]; then
-        echo "$(pwd)""/qi_wifi_user_passwords.csv"
+        echo "$(pwd)""/qi_wifi_user_details.csv"
     elif [[ $fileoption =~ ^[dhl] ]]; then
-        echo "$(pwd)""/qi_vpn_user_passwords.csv"
+        echo "$(pwd)""/qi_vpn_user_details.csv"
     fi
 }
 
@@ -200,15 +200,16 @@ elif [[ "$choice" =~ [a-d] ]]; then
     username='enter username [ user ] or usernames [ user1 user2 user3 ...]'
     firstname='enter firstname [ firstname ] or firstnames [ firstname1 firstname2 firstname3 ... ]'
     lastname='enter lastname [ lastname ] or lastnames [ lastname1 lastname2 lastname3 ... ]'
-
+    email_id='enter email_id [ email_id ] or email_ids [ email_id1 email_id2 email_id3 ... ]'
 
     my_dict["$username"]=''
     my_dict["$firstname"]=''
     my_dict["$lastname"]=''
+    my_dict["$email_id"]=''
 
     for key in "${!my_dict[@]}"; do
         i=0
-        while [ -z "${my_dict[$key]}" ] || [ "${#my_dict["$firstname"]}" -ne "${#my_dict["$firstname"]}" ]; do
+        while [ -z "${my_dict[$key]}" ] || [ "${#my_dict["$username"]}" -ne "${#my_dict["$key"]}" ]; do
             if [[ $i -gt 0 ]]; then
                 echo -e "\033[0;31m field is empty or entries are not equal to number of usernames you entered\033[0m"
             fi
@@ -227,15 +228,8 @@ elif [[ "$choice" =~ [a-d] ]]; then
     IFS=' ' read -ra users <<<"${my_dict["$username"]}"
     IFS=' ' read -ra first <<<"${my_dict["$firstname"]}"
     IFS=' ' read -ra last <<<"${my_dict["$lastname"]}"
+    IFS=' ' read -ra emlid <<<"${my_dict["$email_id"]}"
 fi
-
-# qi_wifi_users=(puja.n ashutosh.t akhilesh.s karina.a divyang.t akil.t lalan.w abhishek.soni rasid.p anurag.s afrin.s rohan.m prerna.n abhishek.sh sandeep.b dhrumin.v bernice.m prodipta.g sanika.b sana.p)
-
-# qi_wifi_users=(jumana.l anupriya nitesh)
-
-# qi_vpn_users=(dhruvmin.v madhusai.r pranav.a kishan.m sonam.d garvjeet.s sachin.p nisha.s vedant.m akhilesh.s akil.v slomy.v jay.p aushutosh.d chainika.t ishan.s prodipta.g viraj.b rekhit.p sainika.p shaival.p premanand.m markand.s paresh.r sarvesh.p subhash.k deepa.m laxmi.r rahul.n siddhesh.k rohit.s dhiraj.y ajit.c swati.g puja.n rohan.m jumana.l vivek.m anupriya.g afrin.s)
-
-# qi_users=(dakshay.m ramdas jfnmgh fyjgdjd)
 
 result=()
 err=()
@@ -262,7 +256,7 @@ for ((index = 0; index < ${#users[@]}; index++)); do
 
     # executing Functions
     if [[ $choice =~ [a-d] ]]; then
-        res=$(create_user "${users[$index]}" "$pass" "${first[$index]}" "${last[$index]}")
+        res=$(create_user "${users[$index]}" "$pass" "${first[$index]}" "${last[$index]}" "${emlid[$index]}")
 
     elif [[ $choice =~ [e-h] ]]; then
         res=$(change_password "${users[$index]}" "$pass")
@@ -294,7 +288,8 @@ for ((index = 0; index < ${#users[@]}; index++)); do
                 for ug in "${ng[@]}"; do
                     ipa group-add-member "$ug" --users="$(echo $res | cut -d , -f 1)"
                 done
-        cmpltd+=("${users[$index]}")
+            cmpltd+=("${users[$index]}")
+        fi
     fi
     
 
@@ -302,7 +297,7 @@ done
 
 if [[ ${#result[@]} -eq 0 ]]; then
     json_array=$(printf "%s\n" "${result[@]}" | jq -R . | jq -s .)
-    python user_manage.py "$json_array" "$file" "$choice"
+    python "$(pwd)"/my_package/user_manage.py "$json_array" "$file" "$choice"
 fi
 
 echo "--------------Task completed for--------------"
