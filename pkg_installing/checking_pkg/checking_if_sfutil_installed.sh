@@ -16,6 +16,10 @@ for k in $(cat solar.txt); do
                    # echo "Error copying RPM file to $str"
                     #install_issues+=("$k")
 		     not_installed+=("$k")
+<<<<<<< HEAD
+=======
+                     
+>>>>>>> fdb973064d33d9b38003b5dd6c4dcd8cd0868431
                 fi
 done      
 

@@ -32,7 +32,11 @@ function locate_install {
 }
 
 for server in $( #inputing values
+<<<<<<< HEAD
     cat pkg.txt
+=======
+    cat reachable_ip_new_1.txt  
+>>>>>>> fdb973064d33d9b38003b5dd6c4dcd8cd0868431
 ); do
 
     echo "checking for $server"
